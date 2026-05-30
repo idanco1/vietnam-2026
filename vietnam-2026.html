@@ -278,6 +278,45 @@
     border-left: 2px solid #ffc107;
     margin-bottom: 8px;
   }
+
+  /* Weather widgets (August averages — placeholder, ready for live data via data-weather-loc) */
+  .weather-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px 8px;
+    background: #f0f7ff;
+    border-radius: 4px;
+    border-left: 2px solid #4a90e2;
+  }
+  .weather-mini::before {
+    content: 'Aug avg:';
+    font-size: 9px;
+    color: #4a90e2;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-right: 2px;
+  }
+  .weather-chip {
+    font-size: 10px;
+    padding: 2px 7px;
+    background: white;
+    border-radius: 10px;
+    color: #444;
+    border: 1px solid #d0d7de;
+    white-space: nowrap;
+  }
+  .weather-temp { color: #d4622a; border-color: #f5c89c; }
+  .weather-rain { color: #2a7a9c; border-color: #a3d4e6; }
+  .weather-uv { font-weight: 600; }
+  .uv-low { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+  .uv-moderate { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+  .uv-high { background: #ffd591; color: #ad6800; border-color: #ffc069; }
+  .uv-very-high { background: #ff7875; color: #fff; border-color: #ff7875; }
+  .uv-extreme { background: #722ed1; color: #fff; border-color: #722ed1; }
   .property-footer {
     display: flex;
     justify-content: space-between;
@@ -588,6 +627,11 @@
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Workspace</span>
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
             </div>
+            <div class="weather-mini" data-weather-loc="hcmc-jul">
+              <span class="weather-chip weather-temp">31°/24°</span>
+              <span class="weather-chip weather-rain">~270mm wet</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
+            </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Thu 14:00</strong></div>
               <div><label>Check-out</label><strong>Sat 12:00</strong></div>
@@ -618,6 +662,11 @@
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Hot tub</span><span class="amenity highlight">Beachfront</span>
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span><span class="amenity">Beach access</span>
             </div>
+            <div class="weather-mini" data-weather-loc="muine">
+              <span class="weather-chip weather-temp">31°/25°</span>
+              <span class="weather-chip weather-rain">~180mm wet</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
+            </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Sat 15:00</strong></div>
               <div><label>Check-out</label><strong>Tue 11:00</strong></div>
@@ -646,6 +695,11 @@
             <div class="specs">4 guests · 2 bedrooms · 2 beds · 2 baths</div>
             <div class="amenities">
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
+            </div>
+            <div class="weather-mini" data-weather-loc="dalat">
+              <span class="weather-chip weather-temp">23°/16°</span>
+              <span class="weather-chip weather-rain">~280mm wet</span>
+              <span class="weather-chip weather-uv uv-very-high">UV 9 very high</span>
             </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Tue 14:00</strong></div>
@@ -677,6 +731,11 @@
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Washer</span><span class="amenity highlight">Workspace</span>
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span>
             </div>
+            <div class="weather-mini" data-weather-loc="nhatrang">
+              <span class="weather-chip weather-temp">32°/26°</span>
+              <span class="weather-chip weather-rain">~50mm dry</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
+            </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Tue 14:00</strong></div>
               <div><label>Check-out</label><strong>Tue 12:00</strong></div>
@@ -706,6 +765,11 @@
             <div class="amenities">
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Beachfront</span><span class="amenity highlight">Ocean view</span><span class="amenity highlight">Workspace</span>
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
+            </div>
+            <div class="weather-mini" data-weather-loc="danang">
+              <span class="weather-chip weather-temp">33°/25°</span>
+              <span class="weather-chip weather-rain">~125mm wet</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
             </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Tue 14:00</strong></div>
@@ -737,6 +801,11 @@
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Washer</span><span class="amenity highlight">Workspace</span><span class="amenity highlight">Garden view</span>
               <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span>
             </div>
+            <div class="weather-mini" data-weather-loc="hoian">
+              <span class="weather-chip weather-temp">33°/25°</span>
+              <span class="weather-chip weather-rain">~135mm wet</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
+            </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Fri 14:00</strong></div>
               <div><label>Check-out</label><strong>Sat 11:00</strong></div>
@@ -767,6 +836,11 @@
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Spa</span><span class="amenity highlight">Private beach</span><span class="amenity highlight">Water park</span><span class="amenity highlight">Breakfast</span><span class="amenity highlight">Airport shuttle</span>
               <span class="amenity">WiFi</span><span class="amenity">Restaurant</span><span class="amenity">Bar</span><span class="amenity">Kitchen</span><span class="amenity">Hot tub</span><span class="amenity">Sauna</span><span class="amenity">Kids club</span><span class="amenity">Garden</span><span class="amenity">AC</span><span class="amenity">TV</span>
             </div>
+            <div class="weather-mini" data-weather-loc="phuquoc">
+              <span class="weather-chip weather-temp">30°/25°</span>
+              <span class="weather-chip weather-rain">~445mm peak wet</span>
+              <span class="weather-chip weather-uv uv-very-high">UV 10 very high</span>
+            </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Sat 15:00</strong></div>
               <div><label>Check-out</label><strong>Sat 12:00</strong></div>
@@ -796,6 +870,11 @@
             <div class="amenities">
               <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Washing machine</span><span class="amenity highlight">Spa</span>
               <span class="amenity">WiFi</span><span class="amenity">Restaurant</span><span class="amenity">Bar</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span><span class="amenity">Elevator</span><span class="amenity">City view</span><span class="amenity">Bathtub</span><span class="amenity">Airport shuttle</span>
+            </div>
+            <div class="weather-mini" data-weather-loc="hcmc-aug">
+              <span class="weather-chip weather-temp">31°/24°</span>
+              <span class="weather-chip weather-rain">~270mm wet</span>
+              <span class="weather-chip weather-uv uv-extreme">UV 11+ extreme</span>
             </div>
             <div class="checkinout">
               <div><label>Check-in</label><strong>Sat 15:00–23:00</strong></div>
