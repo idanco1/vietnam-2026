@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1a1a">
+<title>Vietnam 2026 — Trip Site</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background: #f4f6f8;
+    color: #1a1a1a;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: #1a1a1a;
+    color: white;
+    padding: 24px 0;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #333; }
+  .sidebar-title { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.3; }
+  .sidebar-sub { font-size: 11px; color: #999; margin-top: 4px; }
+  .sidebar-nav { list-style: none; padding: 12px 0; margin: 0; }
+  .sidebar-nav li { padding: 0; }
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    color: #d0d7de;
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { background: #2a2a2a; color: white; }
+  .sidebar-nav a.active { background: #2a2a2a; color: white; border-left-color: #4a90e2; }
+  .sidebar-nav .nav-section {
+    padding: 14px 20px 6px;
+    font-size: 10px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .sidebar-nav .swatch {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  /* Mobile menu button */
+  .menu-btn {
+    display: none;
+    position: fixed;
+    top: 12px;
+    top: calc(12px + env(safe-area-inset-top));
+    left: 12px;
+    z-index: 50;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .scrim {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9;
+  }
+
+  /* Main content */
+  .main {
+    padding: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    max-width: 1100px;
+    min-width: 0;
+  }
+  section { scroll-margin-top: 16px; margin-bottom: 32px; }
+  section h2 { font-size: 22px; margin: 0 0 16px; }
+
+  /* Overview */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .summary-card {
+    background: white;
+    padding: 14px;
+    border-radius: 8px;
+    border-left: 4px solid #4a90e2;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .summary-label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.5px; }
+  .summary-value { font-size: 17px; font-weight: 600; margin-top: 4px; }
+  .summary-sub { font-size: 10px; margin-top: 4px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    padding: 10px 18px;
+    background: #e8eaed;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: #555;
+    border: none;
+  }
+  .tab.active { background: white; color: #1a1a1a; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Calendar */
+  .month {
+    background: white;
+    border-radius: 0 10px 10px 10px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .dow {
+    text-align: center;
+    font-weight: 600;
+    font-size: 10px;
+    color: #777;
+    padding: 4px 0;
+    text-transform: uppercase;
+  }
+  .day {
+    min-height: 64px;
+    padding: 4px;
+    border-radius: 4px;
+    background: #fafbfc;
+    border: 1px solid #eaecef;
+    font-size: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .day.empty { background: transparent; border: none; }
+  .day-num { font-weight: 600; font-size: 11px; color: #333; margin-bottom: 2px; }
+  .day-events { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .event {
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9px;
+    line-height: 1.2;
+    color: white;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .event-hcmc { background: #5b8def; }
+  .event-muine { background: #f5a623; }
+  .event-dalat { background: #50c878; }
+  .event-nhatrang { background: #38b6c4; }
+  .event-danang { background: #9b6dd7; }
+  .event-hoian { background: #d4a373; }
+  .event-phuquoc { background: #ff7f50; }
+  .event-dubai { background: #7d7d7d; }
+  .event-flight { background: #e74c3c; }
+  .event-domestic { background: #fff3cd; color: #856404; border-left: 2px solid #ffc107; }
+  .event-workation { background: rgba(80, 200, 120, 0.2); color: #2e7d32; font-weight: 700; font-size: 8px; border: 1px dashed #50c878; }
+
+  /* Property cards */
+  .panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .property-card {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    background: #fafbfc;
+    border-radius: 8px;
+    border-left: 4px solid #4a90e2;
+    scroll-margin-top: 16px;
+  }
+  .property-card:last-child { margin-bottom: 0; }
+  .property-card.hcmc { border-color: #5b8def; }
+  .property-card.muine { border-color: #f5a623; }
+  .property-card.dalat { border-color: #50c878; }
+  .property-card.nhatrang { border-color: #38b6c4; }
+  .property-card.danang { border-color: #9b6dd7; }
+  .property-card.hoian { border-color: #d4a373; }
+  .property-card.phuquoc { border-color: #ff7f50; }
+  .property-photos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 56px 56px;
+    gap: 3px;
+    height: 115px;
+  }
+  .property-photos img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: zoom-in;
+    transition: opacity 0.2s;
+    background: #e8eaed;
+  }
+  .property-photos img:hover { opacity: 0.85; }
+  .property-photos img:first-child { grid-row: 1 / 3; grid-column: 1; height: 115px; }
+  .property-info h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.3; }
+  .property-info .dates { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .property-info .addr { font-size: 11px; color: #666; margin-bottom: 8px; line-height: 1.4; }
+  .property-info .specs { font-size: 11px; color: #333; margin-bottom: 8px; font-weight: 600; }
+  .amenities { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .amenity {
+    font-size: 10px;
+    padding: 2px 8px;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    color: #444;
+  }
+  .amenity.highlight { background: #e6f7ff; border-color: #91d5ff; color: #0050b3; font-weight: 600; }
+  .checkinout {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    font-size: 10px;
+    background: #f0f3f5;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .checkinout div { display: flex; flex-direction: column; }
+  .checkinout label { color: #777; font-size: 9px; text-transform: uppercase; }
+  .checkinout strong { font-size: 11px; }
+  .cancel-info {
+    font-size: 10px;
+    color: #555;
+    background: #fff8e6;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border-left: 2px solid #ffc107;
+    margin-bottom: 8px;
+  }
+  .property-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  .property-footer .conf { color: #777; font-family: monospace; font-size: 10px; }
+  .property-footer .price { font-weight: 700; font-size: 14px; color: #28a745; }
+  .property-footer a {
+    background: #4a90e2;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .property-footer a:hover { background: #3a7dca; }
+
+  /* Lightbox */
+  .lightbox {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+    padding: 20px;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+  .lightbox-close {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top));
+    right: 20px;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.5);
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    line-height: 1;
+  }
+
+  /* Flights */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #f8f9fa; font-weight: 600; color: #555; font-size: 11px; text-transform: uppercase; }
+  tr:last-child td { border-bottom: none; }
+  a.flight-link { color: #4a90e2; text-decoration: none; word-break: break-word; }
+  a.flight-link:hover { text-decoration: underline; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+  .badge-pending { background: #ffc107; color: #333; }
+  .badge-confirmed { background: #28a745; color: white; }
+
+  ul.tasks { font-size: 13px; line-height: 1.7; padding-left: 20px; margin: 0; }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px;
+      height: 100vh;
+      height: 100dvh;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+    }
+    .sidebar.open { transform: translateX(0); }
+    .scrim.show { display: block; }
+    .menu-btn { display: block; }
+    .main {
+      padding: 16px;
+      padding-top: calc(72px + env(safe-area-inset-top));
+    }
+    section h2 { font-size: 18px; }
+    .property-card {
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+    .property-photos {
+      grid-template-columns: 2fr 1fr;
+      grid-template-rows: 70px 70px;
+      height: 143px;
+    }
+    .property-photos img:first-child { grid-row: 1 / 3; height: 143px; }
+    .property-info h3 { font-size: 14px; }
+    .day { min-height: 52px; padding: 3px; }
+    .day-num { font-size: 10px; }
+    .event { font-size: 8px; padding: 1px 3px; }
+    .dow { font-size: 9px; }
+    .panel { padding: 14px; }
+    .checkinout { grid-template-columns: 1fr 1fr; }
+    .property-footer { flex-direction: column; align-items: stretch; gap: 6px; }
+    .property-footer .price { font-size: 16px; text-align: right; }
+    .property-footer a { text-align: center; padding: 8px 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .main { padding: 12px; padding-top: calc(64px + env(safe-area-inset-top)); }
+    .day { min-height: 48px; }
+    section h2 { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">&#9776;</button>
+<div class="scrim" id="scrim" onclick="toggleSidebar()"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Vietnam 2026</div>
+      <div class="sidebar-sub">15 Jul – 24 Aug · 4 travelers · 38 days</div>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="#overview" class="nav-link" onclick="closeSidebarMobile()">Overview</a></li>
+      <li><a href="#calendar" class="nav-link" onclick="closeSidebarMobile()">Calendar</a></li>
+      <li><a href="#map" class="nav-link" onclick="closeSidebarMobile()">Map</a></li>
+      <li><a href="#flights" class="nav-link" onclick="closeSidebarMobile()">Flights</a></li>
+      <li><a href="#accommodation" class="nav-link" onclick="closeSidebarMobile()">Accommodation</a></li>
+      <li class="nav-section">Stays</li>
+      <li><a href="#stay-hcmc1" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#5b8def;"></span>HCMC · Jul 16-18</a></li>
+      <li><a href="#stay-muine" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#f5a623;"></span>Mui Ne · Jul 18-21</a></li>
+      <li><a href="#stay-dalat" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#50c878;"></span>Da Lat · Jul 21-28</a></li>
+      <li><a href="#stay-nhatrang" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#38b6c4;"></span>Nha Trang · Jul 28-Aug 4</a></li>
+      <li><a href="#stay-danang" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#9b6dd7;"></span>Da Nang · Aug 4-7</a></li>
+      <li><a href="#stay-hoian" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#d4a373;"></span>Hoi An · Aug 7-15</a></li>
+      <li><a href="#stay-phuquoc" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#ff7f50;"></span>Phu Quoc · Aug 15-22</a></li>
+      <li><a href="#stay-hcmc2" class="nav-link" onclick="closeSidebarMobile()"><span class="swatch" style="background:#5b8def;"></span>HCMC · Aug 22-23</a></li>
+      <li class="nav-section">Other</li>
+      <li><a href="#tasks" class="nav-link" onclick="closeSidebarMobile()">Open tasks</a></li>
+    </ul>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <section id="overview">
+      <h2>Overview</h2>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <div class="summary-label">Int'l Flights</div>
+          <div class="summary-value">FlyDubai / EK</div>
+          <div class="summary-sub" style="color:#28a745;">Booked · SE0EWC / LU45YB</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Accommodation</div>
+          <div class="summary-value">~₪14,160</div>
+          <div class="summary-sub" style="color:#28a745;">All 39 nights booked</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Budget (gross)</div>
+          <div class="summary-value">~₪74,300</div>
+          <div class="summary-sub" style="color:#777;">~₪32,450 net</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Open</div>
+          <div class="summary-value">3 dom. flights</div>
+          <div class="summary-sub" style="color:#e74c3c;">+ visas, insurance</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="calendar">
+      <h2>Calendar</h2>
+      <div class="tabs">
+        <button class="tab active" onclick="showMonth(event, 'jul')">July 2026</button>
+        <button class="tab" onclick="showMonth(event, 'aug')">August 2026</button>
+      </div>
+      <div class="tab-content active" id="tab-jul">
+        <div class="month">
+          <div class="calendar">
+            <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
+            <div class="day empty"></div><div class="day empty"></div>
+            <div class="day"><div class="day-num">1</div></div><div class="day"><div class="day-num">2</div></div><div class="day"><div class="day-num">3</div></div><div class="day"><div class="day-num">4</div></div><div class="day"><div class="day-num">5</div></div>
+            <div class="day"><div class="day-num">6</div></div><div class="day"><div class="day-num">7</div></div><div class="day"><div class="day-num">8</div></div><div class="day"><div class="day-num">9</div></div><div class="day"><div class="day-num">10</div></div><div class="day"><div class="day-num">11</div></div><div class="day"><div class="day-num">12</div></div>
+            <div class="day"><div class="day-num">13</div></div><div class="day"><div class="day-num">14</div></div>
+            <div class="day"><div class="day-num">15</div><div class="day-events"><div class="event event-flight">FZ1626 23:50</div></div></div>
+            <div class="day"><div class="day-num">16</div><div class="day-events"><div class="event event-dubai">DXB transit</div><div class="event event-hcmc">HCMC arr</div></div></div>
+            <div class="day"><div class="day-num">17</div><div class="day-events"><div class="event event-hcmc">HCMC</div></div></div>
+            <div class="day"><div class="day-num">18</div><div class="day-events"><div class="event event-hcmc">HCMC out</div><div class="event event-muine">Mui Ne</div></div></div>
+            <div class="day"><div class="day-num">19</div><div class="day-events"><div class="event event-muine">Mui Ne</div></div></div>
+            <div class="day"><div class="day-num">20</div><div class="day-events"><div class="event event-muine">Mui Ne</div></div></div>
+            <div class="day"><div class="day-num">21</div><div class="day-events"><div class="event event-muine">MN out</div><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">22</div><div class="day-events"><div class="event event-dalat">Da Lat</div><div class="event event-workation">WORK</div></div></div>
+            <div class="day"><div class="day-num">23</div><div class="day-events"><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">24</div><div class="day-events"><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">25</div><div class="day-events"><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">26</div><div class="day-events"><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">27</div><div class="day-events"><div class="event event-dalat">Da Lat</div></div></div>
+            <div class="day"><div class="day-num">28</div><div class="day-events"><div class="event event-dalat">DL out</div><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day"><div class="day-num">29</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div><div class="event event-workation">WORK</div></div></div>
+            <div class="day"><div class="day-num">30</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day"><div class="day-num">31</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day empty"></div><div class="day empty"></div>
+          </div>
+        </div>
+      </div>
+      <div class="tab-content" id="tab-aug">
+        <div class="month">
+          <div class="calendar">
+            <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div><div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
+            <div class="day empty"></div><div class="day empty"></div><div class="day empty"></div><div class="day empty"></div><div class="day empty"></div>
+            <div class="day"><div class="day-num">1</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day"><div class="day-num">2</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day"><div class="day-num">3</div><div class="day-events"><div class="event event-nhatrang">Nha Trang</div></div></div>
+            <div class="day"><div class="day-num">4</div><div class="day-events"><div class="event event-nhatrang">NTR out</div><div class="event event-domestic">CXR→DAD</div><div class="event event-danang">Da Nang</div></div></div>
+            <div class="day"><div class="day-num">5</div><div class="day-events"><div class="event event-danang">Da Nang</div></div></div>
+            <div class="day"><div class="day-num">6</div><div class="day-events"><div class="event event-danang">Da Nang</div></div></div>
+            <div class="day"><div class="day-num">7</div><div class="day-events"><div class="event event-danang">DAD out</div><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">8</div><div class="day-events"><div class="event event-hoian">Hoi An</div><div class="event event-workation">WORK</div></div></div>
+            <div class="day"><div class="day-num">9</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">10</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">11</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">12</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">13</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">14</div><div class="day-events"><div class="event event-hoian">Hoi An</div></div></div>
+            <div class="day"><div class="day-num">15</div><div class="day-events"><div class="event event-hoian">HA out</div><div class="event event-domestic">DAD→PQC</div><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">16</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">17</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">18</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">19</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">20</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">21</div><div class="day-events"><div class="event event-phuquoc">Phu Quoc</div></div></div>
+            <div class="day"><div class="day-num">22</div><div class="day-events"><div class="event event-phuquoc">PQC out</div><div class="event event-domestic">PQC→SGN</div><div class="event event-hcmc">Léman D3</div></div></div>
+            <div class="day"><div class="day-num">23</div><div class="day-events"><div class="event event-hcmc">HCMC</div><div class="event event-flight">EK0393 23:50</div></div></div>
+            <div class="day"><div class="day-num">24</div><div class="day-events"><div class="event event-dubai">DXB</div><div class="event event-flight">FZ1073→TLV</div></div></div>
+            <div class="day"><div class="day-num">25</div></div><div class="day"><div class="day-num">26</div></div><div class="day"><div class="day-num">27</div></div><div class="day"><div class="day-num">28</div></div><div class="day"><div class="day-num">29</div></div><div class="day"><div class="day-num">30</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="map">
+      <h2>Map</h2>
+      <div class="panel" style="padding:0;overflow:hidden;">
+        <div id="leaflet-map" style="height:500px;width:100%;"></div>
+      </div>
+      <p style="font-size:11px;color:#777;margin-top:6px;">Pins follow itinerary order. Click any pin for stay details. Lines show the overland (orange) and domestic flight (red dashed) legs.</p>
+    </section>
+
+    <section id="flights">
+      <h2>Flights</h2>
+      <div class="panel">
+        <h3 style="margin-top:0;font-size:15px;">International — FlyDubai / Emirates <span class="badge badge-confirmed">Booked</span></h3>
+        <p style="font-size:11px;color:#555;margin:4px 0 10px;">FlyDubai ref: SE0EWC · Emirates ref: LU45YB · Rebooked from cancelled Air India</p>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Date</th><th>Flight</th><th>Route</th><th>Times</th><th>Duration</th></tr></thead>
+            <tbody>
+              <tr><td>Wed Jul 15</td><td>FZ 1626</td><td>TLV → DXB</td><td>23:50 → 04:10 (+1)</td><td>3h 20m</td></tr>
+              <tr><td colspan="5" style="background:#f8f9fa;font-size:10px;color:#777;text-align:center;">Dubai transit 5h 25m</td></tr>
+              <tr><td>Thu Jul 16</td><td>EK 0392</td><td>DXB → SGN</td><td>09:35 → 20:00</td><td>7h 25m</td></tr>
+              <tr><td colspan="5" style="height:6px;background:white;border:none;"></td></tr>
+              <tr><td>Sun Aug 23</td><td>EK 0393</td><td>SGN → DXB</td><td>23:50 → 03:45 (+1)</td><td>6h 55m</td></tr>
+              <tr><td colspan="5" style="background:#f8f9fa;font-size:10px;color:#777;text-align:center;">Dubai transit 2h 30m (tight!)</td></tr>
+              <tr><td>Mon Aug 24</td><td>FZ 1073</td><td>DXB → TLV</td><td>06:15 → 08:45</td><td>3h 30m</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 style="margin-top:20px;font-size:15px;">Domestic <span class="badge badge-pending">To book</span></h3>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Date</th><th>Route</th><th>Search</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>Tue Aug 4</td><td>CXR → DAD</td><td><a class="flight-link" href="https://www.google.com/travel/flights?q=Flights%20from%20CXR%20to%20DAD%20on%202026-08-04%20oneway%20for%204%20passengers" target="_blank">Google Flights</a></td><td>Vietjet, VN Airlines, Bamboo</td></tr>
+              <tr><td>Sat Aug 15</td><td>DAD → PQC</td><td><a class="flight-link" href="https://www.google.com/travel/flights?q=Flights%20from%20DAD%20to%20PQC%20on%202026-08-15%20oneway%20for%204%20passengers" target="_blank">Google Flights</a></td><td>May connect via SGN</td></tr>
+              <tr><td>Sat Aug 22</td><td>PQC → SGN</td><td><a class="flight-link" href="https://www.google.com/travel/flights?q=Flights%20from%20PQC%20to%20SGN%20on%202026-08-22%20oneway%20for%204%20passengers" target="_blank">Google Flights</a></td><td>Morning/midday preferred</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="accommodation">
+      <h2>Accommodation</h2>
+      <div class="panel">
+
+        <!-- HCMC 1 -->
+        <div class="property-card hcmc" id="stay-hcmc1">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTIzMzMzNTI0MDk4MDk3NTA1Ng==/original/c6287862-4d63-4d70-9189-fc883e835b54.jpeg?im_w=720" alt="HCMC 1">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTIzMzMzNTI0MDk4MDk3NTA1Ng==/original/577d56c4-7560-48db-b8f1-689621bded15.jpeg?im_w=720" alt="HCMC 2">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTE4OTYzNjY2NzMyMDM5NzAzMA%3D%3D/original/1dee733a-248e-4545-b818-b7df204a6116.jpeg?im_w=720" alt="HCMC 3">
+          </div>
+          <div class="property-info">
+            <h3>Great City View #Luxury 2BR @ FREE Pool+Gym</h3>
+            <div class="dates"><strong>HCMC</strong> · Jul 16-18 · 2 nights · Host Van</div>
+            <div class="addr">98 Đường Khánh Hội, Quận 4, Hồ Chí Minh 700000 (Vinh Hoi Apartment, District 4)</div>
+            <div class="specs">4 guests · 2 bedrooms · 2 beds · 2 baths</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Workspace</span>
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Thu 14:00</strong></div>
+              <div><label>Check-out</label><strong>Sat 12:00</strong></div>
+              <div><label>Method</label><strong>Keypad</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jul 11, 14:00 · Partial refund until Jul 16, 14:00</div>
+            <div class="property-footer">
+              <span class="conf">HM8DYM9FYJ</span>
+              <span class="price">₪398.76</span>
+              <a href="https://www.airbnb.com/rooms/1233335240980975056" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mui Ne -->
+        <div class="property-card muine" id="stay-muine">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/3bd5e2cd-9de5-4e95-8a11-cbc79cf9c43b.jpg?im_w=1200" alt="Mui Ne 1">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MzAyMDc4NDc%3D/original/9dcc6f97-5354-4632-8e75-a34d7e6d2b30.jpeg?im_w=720" alt="Mui Ne 2">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MzAyMDc4NDc%3D/original/43bbfad1-3f8a-4704-b328-5cca98476979.jpeg?im_w=720" alt="Mui Ne 3">
+          </div>
+          <div class="property-info">
+            <h3>The CLIFF Beach Apartment w/ terrace &amp; hot tub</h3>
+            <div class="dates"><strong>Mui Ne (Bình Thuận)</strong> · Jul 18-21 · 3 nights · Host Daniil</div>
+            <div class="addr">The Cliff Resort &amp; Residence, Bình Thuận. Check in at resort reception · Exact unit shared 48h before</div>
+            <div class="specs">4 guests · 2 bedrooms · 2 beds · 1 bath</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Hot tub</span><span class="amenity highlight">Beachfront</span>
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span><span class="amenity">Beach access</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Sat 15:00</strong></div>
+              <div><label>Check-out</label><strong>Tue 11:00</strong></div>
+              <div><label>Method</label><strong>Resort staff</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jun 18, 15:00 · Partial refund until Jul 11, 15:00</div>
+            <div class="property-footer">
+              <span class="conf">HM4YKTCEME</span>
+              <span class="price">₪1,050.45</span>
+              <a href="https://www.airbnb.com/rooms/30207847" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Da Lat -->
+        <div class="property-card dalat" id="stay-dalat">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTM1Nzg2MTA1MDYxOTAzMjQ2Mw==/original/b96fba6f-3cc0-4870-be07-a744c7c891d1.jpeg?im_w=720" alt="Da Lat 1">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTM1Nzg2MTA1MDYxOTAzMjQ2Mw==/original/f7b7e1c7-3842-4a21-8a4d-cff00934ee1d.jpeg?im_w=720" alt="Da Lat 2">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6MTM1Nzg2MTA1MDYxOTAzMjQ2Mw==/original/1bc6a768-1038-4d50-8b98-04901b8baa2b.jpeg?im_w=720" alt="Da Lat 3">
+          </div>
+          <div class="property-info">
+            <h3>Industrial Apartment — 1 de Lusan Da Lat Premium</h3>
+            <div class="dates"><strong>Da Lat (workation anchor)</strong> · Jul 21-28 · 7 nights · Host Ngoc Bao Uyen</div>
+            <div class="addr">First floor, 97 Đường Bùi Thị Xuân, Ward 2, Thành phố Đà Lạt, Lâm Đồng (opposite Saigon Eye Hospital)</div>
+            <div class="specs">4 guests · 2 bedrooms · 2 beds · 2 baths</div>
+            <div class="amenities">
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Tue 14:00</strong></div>
+              <div><label>Check-out</label><strong>Tue 11:00</strong></div>
+              <div><label>Method</label><strong>Smart lock</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jul 16, 14:00 · Partial refund until Jul 21, 14:00</div>
+            <div class="property-footer">
+              <span class="conf">HMFY5HPBMM</span>
+              <span class="price">₪1,664.29</span>
+              <a href="https://www.airbnb.com/rooms/1357861050619032463" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nha Trang -->
+        <div class="property-card nhatrang" id="stay-nhatrang">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1508509632157193088/original/a19e603b-8ed7-46bd-ad29-4e3a5308651d.jpeg?im_w=720" alt="Nha Trang 1">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1508509632157193088/original/629dc40a-eead-4873-af4f-78d3cf7d4840.jpeg?im_w=720" alt="Nha Trang 2">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1508509632157193088/original/24c6208d-6e22-4e51-8912-94a63cbf74dc.jpeg?im_w=720" alt="Nha Trang 3">
+          </div>
+          <div class="property-info">
+            <h3>2BR Ocean View / Pool / City Center [SerenityView]</h3>
+            <div class="dates"><strong>Nha Trang (workation anchor)</strong> · Jul 28 – Aug 4 · 7 nights · Host Minh Nguyễn</div>
+            <div class="addr">Apt 2906, 29th floor, Marina Suites, 25 Đường Phan Chu Trinh, Van Thanh ward, Nha Trang, Khánh Hòa · Phone 086 8565005</div>
+            <div class="specs">5 guests · 2 bedrooms · 2 beds · 2 baths</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Washer</span><span class="amenity highlight">Workspace</span>
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Tue 14:00</strong></div>
+              <div><label>Check-out</label><strong>Tue 12:00</strong></div>
+              <div><label>Method</label><strong>Lockbox</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jun 28, 14:00 · Partial refund until Jul 21, 14:00</div>
+            <div class="property-footer">
+              <span class="conf">HM32ZENPBA</span>
+              <span class="price">₪1,921.11</span>
+              <a href="https://www.airbnb.com/rooms/1508509632157193088" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Da Nang -->
+        <div class="property-card danang" id="stay-danang">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/miso/Hosting-1012588396339747224/original/b00058ef-fc9c-4a87-932f-62cb1344bc3d.jpeg?im_w=720" alt="Da Nang 1">
+            <img src="https://a0.muscache.com/im/pictures/miso/Hosting-1012588396339747224/original/9c05b630-1692-40f7-9577-92d8d5f04e23.jpeg?im_w=720" alt="Da Nang 2">
+            <img src="https://a0.muscache.com/im/pictures/miso/Hosting-1012588396339747224/original/64cd8e49-9ffe-4163-b7b3-e21626fa0323.jpeg?im_w=720" alt="Da Nang 3">
+          </div>
+          <div class="property-info">
+            <h3>Beachfront / Infinity Pool — Walk Beach / City Center</h3>
+            <div class="dates"><strong>Da Nang</strong> · Aug 4-7 · 3 nights · Host Nathan (The Key Hospitality)</div>
+            <div class="addr">200 Võ Nguyên Giáp, Phước Mỹ, Sơn Trà, Đà Nẵng 550000 (My Khe beach). Rooftop pool 100k VND weekdays / 120k weekends per person.</div>
+            <div class="specs">4 guests · 2 bedrooms · 3 beds · 2 baths</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Beachfront</span><span class="amenity highlight">Ocean view</span><span class="amenity highlight">Workspace</span>
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span><span class="amenity">Elevator</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Tue 14:00</strong></div>
+              <div><label>Check-out</label><strong>Fri 11:00</strong></div>
+              <div><label>Method</label><strong>Building staff</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jul 21, 14:00 · Partial refund until Jul 28, 14:00</div>
+            <div class="property-footer">
+              <span class="conf">HMEFT44PFA</span>
+              <span class="price">₪807.12</span>
+              <a href="https://www.airbnb.com/rooms/1013391653698905435" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hoi An -->
+        <div class="property-card hoian" id="stay-hoian">
+          <div class="property-photos">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1006990078045137445/original/b5e87cf7-4558-49d0-a9d4-80ecd4439b23.jpeg?im_w=720" alt="Hoi An 1">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1006990078045137445/original/f70bc3ad-cc15-41e6-a359-47d18d21f901.jpeg?im_w=720" alt="Hoi An 2">
+            <img src="https://a0.muscache.com/im/pictures/hosting/Hosting-1006990078045137445/original/1702e98e-ccae-47e3-9c3f-34d03367ac15.jpeg?im_w=720" alt="Hoi An 3">
+          </div>
+          <div class="property-info">
+            <h3>Laluka House — 3BR luxury, rice view, pool, quiet</h3>
+            <div class="dates"><strong>Hoi An (workation anchor)</strong> · Aug 7-15 · 8 nights · Hosts My Duc (Lala) &amp; Xinh</div>
+            <div class="addr">300/20 Cửa Đại, Hội An, Quảng Nam (Plus code V9P2+V6Q) · House 200m from main road · Staff orientation on arrival</div>
+            <div class="specs">6 guests · 3 bedrooms · 3 beds · 3.5 baths</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Washer</span><span class="amenity highlight">Workspace</span><span class="amenity highlight">Garden view</span>
+              <span class="amenity">WiFi</span><span class="amenity">Kitchen</span><span class="amenity">Free parking</span><span class="amenity">TV</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Fri 14:00</strong></div>
+              <div><label>Check-out</label><strong>Sat 11:00</strong></div>
+              <div><label>Method</label><strong>Host greets</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Aug 6, 14:00 · Partial refund until Aug 7, 14:00</div>
+            <div class="property-footer">
+              <span class="conf">HMPHKBNF48</span>
+              <span class="price">₪2,470.30</span>
+              <a href="https://www.airbnb.com/rooms/1006990078045137445" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phu Quoc -->
+        <div class="property-card phuquoc" id="stay-phuquoc">
+          <div class="property-photos">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/318712637.jpg?k=ba20f9f28d3e59bb6fe9d4de4cce1468c00a12f7642874669adbdb2a23699879&o=" alt="Phu Quoc 1">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/681369103.jpg?k=6fb749d6e2e5f1e8041dd2b22fbea6510c71fa8bc086cb42103d1ddba767b696&o=" alt="Phu Quoc 2">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/681366835.jpg?k=03215ae8166fe2e9f95fe346073149a85024f25e61a284f5a1e886c8e941c376&o=" alt="Phu Quoc 3">
+          </div>
+          <div class="property-info">
+            <h3>New World Phu Quoc Resort — Garden Pool Villa 2BR</h3>
+            <div class="dates"><strong>Phu Quoc</strong> · Aug 15-22 · 7 nights · Booking.com</div>
+            <div class="addr">Kem Beach, An Thoi, Phú Quốc (south coast) · Phone +84 297 3716 666</div>
+            <div class="specs">4 adults max · 2 bedrooms · Entire villa</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Spa</span><span class="amenity highlight">Private beach</span><span class="amenity highlight">Water park</span><span class="amenity highlight">Breakfast</span><span class="amenity highlight">Airport shuttle</span>
+              <span class="amenity">WiFi</span><span class="amenity">Restaurant</span><span class="amenity">Bar</span><span class="amenity">Kitchen</span><span class="amenity">Hot tub</span><span class="amenity">Sauna</span><span class="amenity">Kids club</span><span class="amenity">Garden</span><span class="amenity">AC</span><span class="amenity">TV</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Sat 15:00</strong></div>
+              <div><label>Check-out</label><strong>Sat 12:00</strong></div>
+              <div><label>Method</label><strong>Reception</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Jul 31, 23:59 · Prepayment within 14 days of arrival</div>
+            <div class="property-footer">
+              <span class="conf">5562209768 · PIN 2347</span>
+              <span class="price">₪5,359</span>
+              <a href="https://www.booking.com/hotel/vn/new-world-phu-quoc-resort-kien-giang.html?checkin=2026-08-15&checkout=2026-08-22&group_adults=2&group_children=2&age=11&age=15" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Léman HCMC -->
+        <div class="property-card hcmc" id="stay-hcmc2">
+          <div class="property-photos">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/490420420.jpg?k=9ca193a2afc2408e7cde6e5be5a8caa600a1dbc56ddc73550c0a19900a65715e&o=" alt="Léman 1">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/490420426.jpg?k=f331249f23e34fc55e590829f18b8f683306b181745167b4b1a8349b7270f3d0&o=" alt="Léman 2">
+            <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/452064176.jpg?k=7ebda1b2ce3a13693cb71e1eba22d101716dba2cb7a4b8b0b547d0794f9d9de4&o=" alt="Léman 3">
+          </div>
+          <div class="property-info">
+            <h3>Léman Luxury Apartment D3 — Two-Bedroom Apartment</h3>
+            <div class="dates"><strong>HCMC return</strong> · Aug 22-23 · 1 night · Booking.com (Genius -22%)</div>
+            <div class="addr">117 Nguyễn Đình Chiểu, District 3, Ho Chi Minh City · Phone +84 346 153 140</div>
+            <div class="specs">4 adults max · 2 bedrooms · Entire apartment</div>
+            <div class="amenities">
+              <span class="amenity highlight">Pool</span><span class="amenity highlight">Gym</span><span class="amenity highlight">Washing machine</span><span class="amenity highlight">Spa</span>
+              <span class="amenity">WiFi</span><span class="amenity">Restaurant</span><span class="amenity">Bar</span><span class="amenity">Kitchen</span><span class="amenity">AC</span><span class="amenity">TV</span><span class="amenity">Elevator</span><span class="amenity">City view</span><span class="amenity">Bathtub</span><span class="amenity">Airport shuttle</span>
+            </div>
+            <div class="checkinout">
+              <div><label>Check-in</label><strong>Sat 15:00–23:00</strong></div>
+              <div><label>Check-out</label><strong>Sun 12:00</strong></div>
+              <div><label>Method</label><strong>Lockbox</strong></div>
+            </div>
+            <div class="cancel-info">Free cancellation until Aug 16, 23:59 · <strong style="color:#e74c3c;">⚠ Checkout 12:00 but flight 23:50 — plan 11h gap</strong></div>
+            <div class="property-footer">
+              <span class="conf">5427044409 · PIN 8480</span>
+              <span class="price">₪247</span>
+              <a href="https://www.booking.com/hotel/vn/leman-luxury-apartment-district-3-hcmc.html?checkin=2026-08-22&checkout=2026-08-23&group_adults=2&group_children=2&age=11&age=15" target="_blank" rel="noopener noreferrer">View listing</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tasks">
+      <h2>Open Tasks</h2>
+      <div class="panel">
+        <ul class="tasks">
+          <li>Book 3 domestic Vietnam flights (links in Flights section)</li>
+          <li><strong>Plan last-day HCMC logistics:</strong> Léman checkout 12:00 but SGN flight 23:50 — luggage storage / lounge / late checkout</li>
+          <li>Apply for e-visas (~$25/pax DIY) — late June 2026</li>
+          <li>Buy travel insurance</li>
+          <li>Order eSIMs (trip.com recommended)</li>
+          <li>Message Mui Ne host about ~17:00 arrival</li>
+          <li>Monitor dengue situation in southern Vietnam pre-departure</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<!-- Lightbox modal -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+  <img id="lightbox-img" referrerpolicy="no-referrer" src="" alt="">
+</div>
+
+<script>
+function showMonth(e, month) {
+  document.querySelectorAll('#calendar .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#calendar .tab-content').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('tab-' + month).classList.add('active');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('scrim').classList.toggle('show');
+}
+function closeSidebarMobile() {
+  if (window.innerWidth <= 860) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('scrim').classList.remove('show');
+  }
+}
+
+// Lightbox
+document.querySelectorAll('.property-photos img').forEach(img => {
+  img.addEventListener('click', e => {
+    const lightbox = document.getElementById('lightbox');
+    const lbImg = document.getElementById('lightbox-img');
+    lbImg.src = img.src.replace('im_w=720', 'im_w=1440').replace('max500', 'max1024x768');
+    lbImg.alt = img.alt;
+    lightbox.classList.add('show');
+    e.stopPropagation();
+  });
+});
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeLightbox();
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('scrim').classList.remove('show');
+  }
+});
+
+// Sidebar active link tracking (scrollspy)
+const sections = document.querySelectorAll('section[id], .property-card[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+function updateActiveNav() {
+  let current = '';
+  const scrollY = window.scrollY + 120;
+  sections.forEach(s => {
+    if (s.offsetTop <= scrollY) current = s.id;
+  });
+  navLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateActiveNav, { passive: true });
+updateActiveNav();
+
+// ===== MAP =====
+const stops = [
+  { name: 'HCMC (Vinh Hoi)', sub: 'Jul 16-18 · 2 nights · Airbnb',     coords: [10.7676, 106.7026], color: '#5b8def', anchor: 'stay-hcmc1' },
+  { name: 'Mui Ne (The Cliff)', sub: 'Jul 18-21 · 3 nights · Airbnb',   coords: [10.9230, 108.2570], color: '#f5a623', anchor: 'stay-muine' },
+  { name: 'Da Lat (Industrial Apt)', sub: 'Jul 21-28 · 7 nights · Workation', coords: [11.9404, 108.4583], color: '#50c878', anchor: 'stay-dalat' },
+  { name: 'Nha Trang (SerenityView)', sub: 'Jul 28-Aug 4 · 7 nights · Workation', coords: [12.2388, 109.1967], color: '#38b6c4', anchor: 'stay-nhatrang' },
+  { name: 'Da Nang (My Khe)', sub: 'Aug 4-7 · 3 nights · Airbnb',        coords: [16.0617, 108.2444], color: '#9b6dd7', anchor: 'stay-danang' },
+  { name: 'Hoi An (Laluka)', sub: 'Aug 7-15 · 8 nights · Workation',     coords: [15.8801, 108.3380], color: '#d4a373', anchor: 'stay-hoian' },
+  { name: 'Phu Quoc (New World)', sub: 'Aug 15-22 · 7 nights · Resort',  coords: [10.0497, 104.0205], color: '#ff7f50', anchor: 'stay-phuquoc' },
+  { name: 'HCMC (Léman D3)', sub: 'Aug 22-23 · 1 night · Booking',       coords: [10.7820, 106.6857], color: '#5b8def', anchor: 'stay-hcmc2' }
+];
+
+const map = L.map('leaflet-map').setView([13.5, 107.5], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap',
+  maxZoom: 19
+}).addTo(map);
+
+const flightLegs = [[3,4], [5,6], [6,7]];
+for (let i = 0; i < stops.length - 1; i++) {
+  const isFlight = flightLegs.some(([a, b]) => a === i && b === i + 1);
+  L.polyline([stops[i].coords, stops[i+1].coords], {
+    color: isFlight ? '#e74c3c' : '#f5a623',
+    weight: isFlight ? 2 : 3,
+    opacity: 0.7,
+    dashArray: isFlight ? '6, 6' : null
+  }).addTo(map);
+}
+
+stops.forEach((s, i) => {
+  const icon = L.divIcon({
+    html: `<div style="background:${s.color};color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${i+1}</div>`,
+    className: '',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+  L.marker(s.coords, { icon }).addTo(map).bindPopup(
+    `<strong>${s.name}</strong><br><span style="font-size:11px;color:#555;">${s.sub}</span><br><a href="#${s.anchor}" style="font-size:11px;color:#4a90e2;">View details &rarr;</a>`
+  );
+});
+
+map.fitBounds(stops.map(s => s.coords), { padding: [30, 30] });
+setTimeout(() => map.invalidateSize(), 200);
+</script>
+
+</body>
+</html>
